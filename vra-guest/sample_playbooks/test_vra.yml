@@ -1,0 +1,97 @@
+---
+# Collection of sample playbook tasks for various vRA executions
+#   - Windows
+#   - Linux
+#   - Multiple Linux (parallel execution)
+
+# Example simple plays:
+#   - Execute the Windows-based play (provisioning)
+#       ansible-playbook -i hosts --tags windows
+#   - Execute the Linux-based play (provisioning)
+#       ansible-playbook -i hosts --tags linux
+- name: simple vra examples
+  connection: local
+  hosts: localhost
+  tasks:
+      - name: run vra windows guest creation
+        tags:
+            - windows
+        vra_guest:
+            blueprint_name: "Windows-1"
+            cpu: 2
+            disk:
+                - size_gb: 12
+                  mount_point: "C"
+                - size_gb: 5
+                  mount_point: "D"
+            memory: 4096
+            hostname: "test-windows-vm-1"
+            vra_hostname: "my-vra-host.domain"
+            vra_password: "super-secret-pass"
+            vra_tenant: "vsphere.local"
+            vra_username: "automation-user"
+            vsphere_infra_name: "vSphere__vCenter__Machine_1"
+        register: x
+
+      - name: run vra linux guest creation
+        tags:
+            - linux
+        vra_guest:
+            blueprint_name: "Linux-1"
+            cpu: 2
+            disk:
+                - size_gb: 12
+                  mount_point: "/a"
+                - size_gb: 5
+                  mount_point: "/b"
+            memory: 4096
+            hostname: "test-linux-vm-1"
+            vra_hostname: "my-vra-host.domain"
+            vra_password: "super-secret-pass"
+            vra_tenant: "vsphere.local"
+            vra_username: "automation-user"
+            vsphere_infra_name: "vSphere__vCenter__Machine_1"
+        register: x
+
+      - name: output result
+        tags:
+            - windows
+            - linux
+        debug:
+            msg: '{{ x }}'
+
+# Example complex/parallel plays:
+#   - Execute the Complex (multiple parallel) Linux-based play (provisioning)
+#     NOTE: Requires host group "complex-linux" in the hosts file
+#       ansible-playbook -i hosts --tags complex_linux
+- name: complex parallel vra samples
+  connection: local
+  hosts: complex-linux
+  tasks:
+      - name: run vra complex linux guest creation
+        delegate_to: localhost
+        tags:
+            - complex_linux
+        vra_guest:
+            blueprint_name: "Linux-1"
+            cpu: 2
+            disk:
+                - size_gb: 12
+                  mount_point: "/c"
+                - size_gb: 5
+                  mount_point: "/b"
+            memory: 4096
+            hostname: "{{ inventory_hostname }}"
+            vra_hostname: "my-vra-host.domain"
+            vra_password: "super-secret-pass"
+            vra_tenant: "vsphere.local"
+            vra_username: "automation-user"
+            vsphere_infra_name: "vSphere__vCenter__Machine_1"
+        register: x
+
+      - name: output result
+        tags:
+            - complex_linux
+        debug:
+            msg: '{{ x }}'
+...
