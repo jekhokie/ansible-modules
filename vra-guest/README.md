@@ -3,6 +3,13 @@
 Module containing the ability to provision VMs via the VMware vRealize Automation software
 using Blueprints.
 
+***Note***: This module assumes that there is a Blueprint defined which allows a user to
+provision a single VM instance with either a Linux or Windows-based OS. The intent is to
+utilize vRA as a software API abstraction layer in front of VMware and build Blueprints that
+model a single VM per instance and handle the network configuration requirements, possibly
+creating multiple types of Blueprints to mirror the same functionality that public-cloud
+providers such as AWS have for VM instance sizing (m4.large, t2.small).
+
 ## Prerequisites
 
 This module requires a readily-available installation of the vRealize Automation software
