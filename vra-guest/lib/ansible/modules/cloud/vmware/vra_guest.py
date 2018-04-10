@@ -266,7 +266,35 @@ class VRAHelper(object):
         except Exception as e:
             self.module.fail_json(msg="Failed to get VM details for '%s': %s" % (self.hostname, e))
 
-    def get_vm_status(self):
+    def get_vm_state(self):
+        """
+        Make a request to find the state of a VM (running, stopped, etc.). This needs to happen
+        via the resourceData attribute search due to the fact that the top-level resource request
+        via the "get_vm" function above does not return the requestData dictionary that contains the
+        required state information.
+
+        Options are:
+        - On
+        - TurningOn
+        - TurningOff
+        - Off
+        - Rebooting
+
+        Returns: None (updates the instance with the VM state information)
+        """
+        try:
+            if self.request_id == None:
+                self.module.fail_json(msg="No request ID to request VM state information for")
+
+            url = "https://%s/catalog-service/api/consumer/resources/%s" % (self.vra_hostname, self.destroy_id)
+            response = requests.request("GET", url, headers=self.headers, verify=False)
+
+            meta_dict = [element for element in response.json()['resourceData']['entries'] if element['key'] == 'MachineStatus'][0]
+            self.state = meta_dict['value']['value']
+        except Exception as e:
+            self.module.fail_json(msg="Failed to get VM state information for '%s': %s" % (self.hostname, e))
+
+    def get_vm_build_status(self):
         """
         Check on the status of a VM that had been requested to be built
 
@@ -334,7 +362,7 @@ def run_module():
         timer = 0
         timeout_seconds = 600
         while True:
-            vra_helper.get_vm_status()
+            vra_helper.get_vm_build_status()
 
             if timer >= timeout_seconds:
                 module.fail_json(msg="Failed to create VM in %s seconds: %s" % (timer, e))
@@ -349,6 +377,8 @@ def run_module():
         vra_helper.get_vm()
 
     # assign results for output
+    vra_helper.get_vm_state()
+    result['state'] = vra_helper.state
     result['destroy_id'] = vra_helper.destroy_id
     result['hostname'] = vra_helper.hostname
     result['ip'] = vra_helper.ip
