@@ -57,9 +57,9 @@ options:
         description:
             - Name of the user interacting with the API
         required: true
-    vsphere_infra_name:
+    blueprint_instance_id:
         description:
-            - Name of the infrastructure component inside which the template parameters reside for CPU, Disk, Memory, etc.
+            - ID of the instance within the Blueprint - there should only ever be a single ID for this module to work
         required: true
 
 requirements:
@@ -89,7 +89,7 @@ EXAMPLES = '''
     vra_password: "super-secret-pass"
     vra_tenant: "vsphere.local"
     vra_username: "automation-user"
-    vsphere_infra_name: "vSphere__vCenter__Machine_1"
+    blueprint_instance_id: "vSphere__vCenter__Machine_1"
 '''
 
 RETURN = '''
@@ -136,7 +136,7 @@ class VRAHelper(object):
         self.vra_password = module.params['vra_password']
         self.vra_tenant = module.params['vra_tenant']
         self.vra_username = module.params['vra_username']
-        self.vsphere_infra_name = module.params['vsphere_infra_name']
+        self.blueprint_instance_id = module.params['blueprint_instance_id']
 
         # initialize bearer token for auth
         self.get_auth()
@@ -200,7 +200,7 @@ class VRAHelper(object):
         Returns: None (updates the instance template JSON with customizations)
         """
         template = dict(self.template_json.json())
-        metadata = template['data'][self.vsphere_infra_name]['data']
+        metadata = template['data'][self.blueprint_instance_id]['data']
         metadata['cpu'] = self.cpu
         metadata['memory'] = self.memory
         metadata['Hostname'] = self.hostname
@@ -297,7 +297,7 @@ def run_module():
         vra_password=dict(type='str', required=True, no_log=True),
         vra_tenant=dict(type='str', required=True),
         vra_username=dict(type='str', required=True),
-        vsphere_infra_name=dict(type='str', required=True)
+        blueprint_instance_id=dict(type='str', required=True)
     )
 
     # seed result dict that is returned
