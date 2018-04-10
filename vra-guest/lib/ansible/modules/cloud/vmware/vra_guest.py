@@ -28,7 +28,7 @@ options:
         required: true
     disk:
         description:
-            - Array of disks to add to the VM
+            - Array of additional disks to add to the VM - these are *in addition to* the base/root disk (Disk0 - which cannot be modified)
             - 'Valid attributes are:'
             - ' - C(size_gb) (integer): Disk storage size in specified unit.'
             - ' - C(mount_point) (str): Mount point (Linux) or drive letter (Windows).'
@@ -205,17 +205,17 @@ class VRAHelper(object):
         metadata['memory'] = self.memory
         metadata['Hostname'] = self.hostname
 
+        # add custom additional disk drives if requested
         if len(self.disks) >= 1:
             disk_meta_orig = copy.deepcopy(metadata['disks'][0])
             disk_id = disk_meta_orig['data']['id']
-            metadata['disks'] = []
 
             for i, disk in enumerate(self.disks):
                 disk_id += 1
                 disk_meta = copy.deepcopy(disk_meta_orig)
                 disk_meta['data']['capacity'] = self.disks[i]['size_gb']
-                disk_meta['data']['label'] = "Hard Disk %s" % (i+1)
-                disk_meta['data']['volumeId'] = i
+                disk_meta['data']['label'] = "Hard disk %s" % (i + 2)
+                disk_meta['data']['volumeId'] = (i + 1)
                 disk_meta['data']['id'] = disk_id
                 disk_meta['data']['initial_location'] = self.disks[i]['mount_point']
                 metadata['disks'].append(disk_meta)
