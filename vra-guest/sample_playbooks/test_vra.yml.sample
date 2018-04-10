@@ -21,9 +21,9 @@
             cpu: 2
             disk:
                 - size_gb: 12
-                  mount_point: "C"
+                  mount_point: "E"
                 - size_gb: 5
-                  mount_point: "D"
+                  mount_point: "F"
             memory: 4096
             hostname: "test-windows-vm-1"
             vra_hostname: "my-vra-host.domain"

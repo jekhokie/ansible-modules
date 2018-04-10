@@ -47,6 +47,14 @@ ansible-playbook -i <PATH_TO_ANSIBLE>/hosts --tags windows --check <PATH_TO_ANSI
 The above will run the Ansible playbook and pick up the module from this repository, allowing
 for fast development and feedback.
 
+If you wish to utilize raw test inputs you can utilize samples from the `test_args/` directory
+like so:
+
+```bash
+# run the python test case using the test JSON data:
+python ./lib/ansible/modules/cloud/vmware/vra_guest.py test_args/vra_guest.json
+```
+
 ## Installation
 
 In order to install this module into an Ansible installation permanently, place the file
