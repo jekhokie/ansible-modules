@@ -2,7 +2,7 @@
     "ANSIBLE_MODULE_ARGS": {
         "blueprint_name": "Linux-1",
         "cpu": 2,
-        "disk": [
+        "extra_disks": [
             { "size_gb": 12, "mount_point": "/a" },
             { "size_gb": 5, "mount_point": "/b" }
         ],

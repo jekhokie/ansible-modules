@@ -26,7 +26,7 @@ options:
         description:
             - Number of CPUs for the VM (integer)
         required: true
-    disk:
+    extra_disks:
         description:
             - Array of additional disks to add to the VM - these are *in addition to* the base/root disk (Disk0 - which cannot be modified)
             - 'Valid attributes are:'
@@ -78,7 +78,7 @@ EXAMPLES = '''
   vra_guest:
     blueprint_name: "Linux"
     cpu: 2
-    disk:
+    extra_disks:
         - size_gb: 60
           mount_point: "/mnt1"
         - size_gb: 80
@@ -124,7 +124,7 @@ class VRAHelper(object):
         self.module = module
         self.blueprint_name = module.params['blueprint_name']
         self.cpu = module.params['cpu']
-        self.disks = module.params['disk']
+        self.extra_disks = module.params['extra_disks']
         self.ip = None
         self.memory = module.params['memory']
         self.hostname = module.params['hostname']
@@ -206,18 +206,18 @@ class VRAHelper(object):
         metadata['Hostname'] = self.hostname
 
         # add custom additional disk drives if requested
-        if len(self.disks) >= 1:
+        if len(self.extra_disks) >= 1:
             disk_meta_orig = copy.deepcopy(metadata['disks'][0])
             disk_id = disk_meta_orig['data']['id']
 
-            for i, disk in enumerate(self.disks):
+            for i, disk in enumerate(self.extra_disks):
                 disk_id += 1
                 disk_meta = copy.deepcopy(disk_meta_orig)
-                disk_meta['data']['capacity'] = self.disks[i]['size_gb']
+                disk_meta['data']['capacity'] = self.extra_disks[i]['size_gb']
                 disk_meta['data']['label'] = "Hard disk %s" % (i + 2)
                 disk_meta['data']['volumeId'] = (i + 1)
                 disk_meta['data']['id'] = disk_id
-                disk_meta['data']['initial_location'] = self.disks[i]['mount_point']
+                disk_meta['data']['initial_location'] = self.extra_disks[i]['mount_point']
                 metadata['disks'].append(disk_meta)
 
         self.template_json = template
@@ -318,7 +318,7 @@ def run_module():
     module_args = dict(
         blueprint_name=dict(type='str', required=True),
         cpu=dict(type='int', required=True),
-        disk=dict(type='list', default=[]),
+        extra_disks=dict(type='list', default=[]),
         memory=dict(type='int', required=True),
         hostname=dict(type='str', required=True),
         vra_hostname=dict(type='str', required=True),

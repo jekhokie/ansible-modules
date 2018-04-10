@@ -19,7 +19,7 @@
         vra_guest:
             blueprint_name: "Windows-1"
             cpu: 2
-            disk:
+            extra_disks:
                 - size_gb: 12
                   mount_point: "E"
                 - size_gb: 5
@@ -39,7 +39,7 @@
         vra_guest:
             blueprint_name: "Linux-1"
             cpu: 2
-            disk:
+            extra_disks:
                 - size_gb: 12
                   mount_point: "/a"
                 - size_gb: 5
@@ -75,7 +75,7 @@
         vra_guest:
             blueprint_name: "Linux-1"
             cpu: 2
-            disk:
+            extra_disks:
                 - size_gb: 12
                   mount_point: "/c"
                 - size_gb: 5
