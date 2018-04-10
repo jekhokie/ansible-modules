@@ -18,16 +18,30 @@ invoke execution of Blueprints.
 
 ## Development/Testing
 
-You can test the module functionality alongside an existing Ansible installation by specifying
-the `ANSIBLE_LIBRARY` path to be the path of the library folder under this repository. For
-instance - if you are in this directory specifically:
+First and foremost, install Ansible and set up your environment for module development
+so you can develop and run the module testing from this project directory:
 
 ```bash
 # set the library path to the module path under this folder:
 ANSIBLE_LIBRARY=./lib/ansible/modules/
 
+# set up the python virtualenv and development environment
+. <PATH_TO_ANSIBLE>/venv/bin/activate
+. <PATH_TO_ANSIBLE>/hacking/env-setup
+```
+
+Assuming that your `hosts` file and `test_vra.yml` playbook are in the Ansible directory
+(you can copy them from the `sample_playbooks` directory, re-name them to `*.yml` files,
+and modify the parameters to make them your own), you can test the module functionality
+alongside an existing Ansible installation:
+
+```bash
+# copy sample playbooks and edit them
+cp sample_playbooks/test_vra.yml.sample <PATH_TO_ANSIBLE>/test_vra.yml
+vim <PATH_TO_ANSIBLE>test_vra.yml
+
 # run Ansible with the hosts file and corresponding playbook:
-ansible-playbook -i ../../ansible/hosts --tags windows --check ../../ansible/test_vra.yml
+ansible-playbook -i <PATH_TO_ANSIBLE>/hosts --tags windows --check <PATH_TO_ANSIBLE>/test_vra.yml
 ```
 
 The above will run the Ansible playbook and pick up the module from this repository, allowing
