@@ -18,6 +18,10 @@ description:
     - "Create a VM from a Blueprint via vRealizeAutomation (vRA)"
 
 options:
+    blueprint_instance_id:
+        description:
+            - ID of the instance within the Blueprint - there should only ever be a single ID for this module to work
+        required: true
     blueprint_name:
         description:
             - Name of the Blueprint to use for provisioning
@@ -33,6 +37,10 @@ options:
             - ' - C(size_gb) (integer): Disk storage size in specified unit.'
             - ' - C(mount_point) (str): Mount point (Linux) or drive letter (Windows).'
         required: false
+    hostname:
+        description:
+            - Hostname of the VM - note that this requires a custom "Hostname" property be added to the Blueprint
+        required: true
     memory:
         description:
             - Amount of memory, in GB (integer)
@@ -57,10 +65,6 @@ options:
         description:
             - Name of the user interacting with the API
         required: true
-    blueprint_instance_id:
-        description:
-            - ID of the instance within the Blueprint - there should only ever be a single ID for this module to work
-        required: true
 
 requirements:
     - copy
@@ -76,6 +80,7 @@ EXAMPLES = '''
 - name: Create a VM from a Blueprint
   delegate_to: localhost
   vra_guest:
+    blueprint_instance_id: "vSphere__vCenter__Machine_1"
     blueprint_name: "Linux"
     cpu: 2
     extra_disks:
@@ -83,13 +88,13 @@ EXAMPLES = '''
           mount_point: "/mnt1"
         - size_gb: 80
           mount_point: "/mnt2"
-    memory: 4096
     hostname: "Test-VM"
+    memory: 4096
+    network_profile: "custA"
     vra_hostname: "my-vra-host.localhost"
     vra_password: "super-secret-pass"
     vra_tenant: "vsphere.local"
     vra_username: "automation-user"
-    blueprint_instance_id: "vSphere__vCenter__Machine_1"
 '''
 
 RETURN = '''
@@ -122,21 +127,22 @@ class VRAHelper(object):
         Returns: (VRAHelper) Instance of the VRAHelper class
         """
         self.module = module
+        self.blueprint_instance_id = module.params['blueprint_instance_id']
         self.blueprint_name = module.params['blueprint_name']
         self.cpu = module.params['cpu']
         self.extra_disks = module.params['extra_disks']
-        self.ip = None
-        self.memory = module.params['memory']
         self.hostname = module.params['hostname']
-        self.headers = {
-            "accept": "application/json",
-            "content-type": "application/json"
-        }
+        self.memory = module.params['memory']
         self.vra_hostname = module.params['vra_hostname']
         self.vra_password = module.params['vra_password']
         self.vra_tenant = module.params['vra_tenant']
         self.vra_username = module.params['vra_username']
-        self.blueprint_instance_id = module.params['blueprint_instance_id']
+
+        self.ip = None
+        self.headers = {
+            "accept": "application/json",
+            "content-type": "application/json"
+        }
 
         # initialize bearer token for auth
         self.get_auth()
@@ -316,16 +322,16 @@ class VRAHelper(object):
 def run_module():
     # available options for the module
     module_args = dict(
+        blueprint_instance_id=dict(type='str', required=True),
         blueprint_name=dict(type='str', required=True),
         cpu=dict(type='int', required=True),
         extra_disks=dict(type='list', default=[]),
-        memory=dict(type='int', required=True),
         hostname=dict(type='str', required=True),
+        memory=dict(type='int', required=True),
         vra_hostname=dict(type='str', required=True),
         vra_password=dict(type='str', required=True, no_log=True),
         vra_tenant=dict(type='str', required=True),
-        vra_username=dict(type='str', required=True),
-        blueprint_instance_id=dict(type='str', required=True)
+        vra_username=dict(type='str', required=True)
     )
 
     # seed result dict that is returned
