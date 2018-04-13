@@ -223,6 +223,8 @@ class VRAHelper(object):
                 disk_meta['data']['label'] = "Hard disk %s" % (i + 2)
                 disk_meta['data']['volumeId'] = (i + 1)
                 disk_meta['data']['id'] = disk_id
+                disk_meta['data']['userCreated'] = "true"
+                disk_meta['data']['is_clone'] = "false"
                 disk_meta['data']['initial_location'] = self.extra_disks[i]['mount_point']
                 metadata['disks'].append(disk_meta)
 
