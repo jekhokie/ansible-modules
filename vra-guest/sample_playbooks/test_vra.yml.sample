@@ -26,6 +26,7 @@
                   mount_point: "F"
             hostname: "test-windows-vm-1"
             memory: 8192
+            network_adapter: "network-adapter-name"
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
@@ -46,6 +47,7 @@
                   mount_point: "/b"
             hostname: "test-linux-vm-1"
             memory: 4096
+            network_adapter: "network-adapter-name"
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
@@ -82,6 +84,7 @@
                   mount_point: "/b"
             hostname: "{{ inventory_hostname }}"
             memory: 4096
+            network_adapter: "network-adapter-name"
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"

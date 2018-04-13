@@ -45,9 +45,9 @@ options:
         description:
             - Amount of memory, in GB (integer)
         required: true
-    hostname:
+    network_adapter:
         description:
-            - Hostname of the VM - note that this requires a custom "Hostname" property be added to the Blueprint
+            - Name of the 'Network Adapter' (network) to attach the VM to - this will drive the target network for the VM
         required: true
     vra_hostname:
         description:
@@ -90,7 +90,7 @@ EXAMPLES = '''
           mount_point: "/mnt2"
     hostname: "Test-VM"
     memory: 4096
-    network_profile: "custA"
+    network_adapter: "network-adapter-name"
     vra_hostname: "my-vra-host.localhost"
     vra_password: "super-secret-pass"
     vra_tenant: "vsphere.local"
@@ -133,6 +133,7 @@ class VRAHelper(object):
         self.extra_disks = module.params['extra_disks']
         self.hostname = module.params['hostname']
         self.memory = module.params['memory']
+        self.network_adapter = module.params['network_adapter']
         self.vra_hostname = module.params['vra_hostname']
         self.vra_password = module.params['vra_password']
         self.vra_tenant = module.params['vra_tenant']
@@ -210,6 +211,7 @@ class VRAHelper(object):
         metadata['cpu'] = self.cpu
         metadata['memory'] = self.memory
         metadata['Hostname'] = self.hostname
+        metadata['VirtualMachine.Network0.Name'] = self.network_adapter
 
         # add custom additional disk drives if requested
         if len(self.extra_disks) >= 1:
@@ -330,6 +332,7 @@ def run_module():
         extra_disks=dict(type='list', default=[]),
         hostname=dict(type='str', required=True),
         memory=dict(type='int', required=True),
+        network_adapter=dict(type='str', required=True),
         vra_hostname=dict(type='str', required=True),
         vra_password=dict(type='str', required=True, no_log=True),
         vra_tenant=dict(type='str', required=True),
