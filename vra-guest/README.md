@@ -10,6 +10,10 @@ model a single VM per instance and handle the network configuration requirements
 creating multiple types of Blueprints to mirror the same functionality that public-cloud
 providers such as AWS have for VM instance sizing (m4.large, t2.small).
 
+***Note***: At this time, this module only creates VMs if they do not exist and is
+idempotent based on the existence of a VM based on the hostname. This module cannot yet be
+utilized to modify parameters of existing VMs.
+
 ## Prerequisites
 
 This module requires a readily-available installation of the vRealize Automation software
