@@ -65,6 +65,12 @@ options:
         description:
             - Name of the user interacting with the API
         required: true
+    wait_timeout:
+        description:
+          - Number of seconds to wait for a VM to boot on creation
+        type: int
+        default: 600
+        required: false
 
 requirements:
     - copy
@@ -95,6 +101,7 @@ EXAMPLES = '''
     vra_password: "super-secret-pass"
     vra_tenant: "vsphere.local"
     vra_username: "automation-user"
+    wait_timeout: 300
 '''
 
 RETURN = '''
@@ -336,13 +343,18 @@ def run_module():
         vra_hostname=dict(type='str', required=True),
         vra_password=dict(type='str', required=True, no_log=True),
         vra_tenant=dict(type='str', required=True),
-        vra_username=dict(type='str', required=True)
+        vra_username=dict(type='str', required=True),
+        wait_timeout=dict(type='int', default=600)
     )
 
     # seed result dict that is returned
     result = dict(
         changed=False,
-        failed=False
+        failed=False,
+        state='',
+        destroy_id='',
+        ip='',
+        hostname=''
     )
 
     # default Ansible constructor
@@ -371,12 +383,12 @@ def run_module():
         vra_helper.create_vm_from_template()
 
         timer = 0
-        timeout_seconds = 600
+        timeout_seconds = module.params['wait_timeout']
         while True:
             vra_helper.get_vm_build_status()
 
             if timer >= timeout_seconds:
-                module.fail_json(msg="Failed to create VM in %s seconds: %s" % (timer, e))
+                module.fail_json(msg="Failed to create VM in %s seconds" % (module.params['wait_timeout']))
             elif vra_helper.build_status == 'Failed':
                 module.fail_json(msg="Failed to create VM: %s" % vra_helper.build_explanation)
             elif vra_helper.build_status == 'Successful':
@@ -391,8 +403,8 @@ def run_module():
     vra_helper.get_vm_state()
     result['state'] = vra_helper.state
     result['destroy_id'] = vra_helper.destroy_id
-    result['hostname'] = vra_helper.hostname
     result['ip'] = vra_helper.ip
+    result['hostname'] = vra_helper.hostname
 
     # successful run
     module.exit_json(**result)

@@ -17,6 +17,7 @@
         tags:
             - windows
         vra_guest:
+            blueprint_instance_id: "vSphere__vCenter__Machine_1"
             blueprint_name: "Windows-1"
             cpu: 4
             extra_disks:
@@ -31,13 +32,14 @@
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
             vra_username: "automation-user"
-            blueprint_instance_id: "vSphere__vCenter__Machine_1"
+            wait_timeout: 600
         register: x
 
       - name: run vra linux guest creation
         tags:
             - linux
         vra_guest:
+            blueprint_instance_id: "vSphere__vCenter__Machine_1"
             blueprint_name: "Linux-1"
             cpu: 2
             extra_disks:
@@ -52,7 +54,7 @@
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
             vra_username: "automation-user"
-            blueprint_instance_id: "vSphere__vCenter__Machine_1"
+            wait_timeout: 600
         register: x
 
       - name: output result
@@ -75,6 +77,7 @@
         tags:
             - complex_linux
         vra_guest:
+            blueprint_instance_id: "vSphere__vCenter__Machine_1"
             blueprint_name: "Linux-1"
             cpu: 2
             extra_disks:
@@ -89,7 +92,7 @@
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
             vra_username: "automation-user"
-            blueprint_instance_id: "vSphere__vCenter__Machine_1"
+            wait_timeout: 600
         register: x
 
       - name: output result

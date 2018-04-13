@@ -1,5 +1,6 @@
 {
     "ANSIBLE_MODULE_ARGS": {
+        "blueprint_instance_id": "vSphere__vCenter__Machine_1",
         "blueprint_name": "Linux-1",
         "cpu": 2,
         "extra_disks": [
@@ -8,10 +9,11 @@
         ],
         "memory": 4096,
         "hostname": "test-linux-vm-1",
+        "network_adapter": "CustB",
         "vra_hostname": "my-vra-host.domain",
         "vra_password": "super-secret-pass",
         "vra_tenant": "vsphere.local",
         "vra_username": "automation-user",
-        "blueprint_instance_id": "vSphere__vCenter__Machine_1"
+        "wait_timeout": 600
     }
 }
