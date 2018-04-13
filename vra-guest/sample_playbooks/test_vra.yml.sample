@@ -18,14 +18,14 @@
             - windows
         vra_guest:
             blueprint_name: "Windows-1"
-            cpu: 2
+            cpu: 4
             extra_disks:
                 - size_gb: 12
                   mount_point: "E"
                 - size_gb: 5
                   mount_point: "F"
-            memory: 4096
             hostname: "test-windows-vm-1"
+            memory: 8192
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
@@ -44,8 +44,8 @@
                   mount_point: "/a"
                 - size_gb: 5
                   mount_point: "/b"
-            memory: 4096
             hostname: "test-linux-vm-1"
+            memory: 4096
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
@@ -80,8 +80,8 @@
                   mount_point: "/c"
                 - size_gb: 5
                   mount_point: "/b"
-            memory: 4096
             hostname: "{{ inventory_hostname }}"
+            memory: 4096
             vra_hostname: "my-vra-host.domain"
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
