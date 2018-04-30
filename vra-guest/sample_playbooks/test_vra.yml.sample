@@ -11,7 +11,7 @@
 #       ansible-playbook -i hosts --tags linux
 - name: simple vra examples
   connection: local
-  hosts: local
+  hosts: localhost
   tasks:
       - name: run vra windows guest creation
         tags:
@@ -32,6 +32,7 @@
             vra_password: "super-secret-pass"
             vra_tenant: "vsphere.local"
             vra_username: "automation-user"
+            wait_timeout: 600
         register: x
       - name: Wait for RDP to come up
         wait_for:
@@ -123,4 +124,4 @@
             - complex_linux
         debug:
             msg: '{{ x }}'
-
+...
