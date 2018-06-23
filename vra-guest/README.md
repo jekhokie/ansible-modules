@@ -32,6 +32,9 @@ ANSIBLE_LIBRARY=./lib/ansible/modules/
 # set up the python virtualenv and development environment
 . <PATH_TO_ANSIBLE>/venv/bin/activate
 . <PATH_TO_ANSIBLE>/hacking/env-setup
+
+# install the required dependencies
+pip install -r requirements.txt
 ```
 
 Assuming that your `hosts` file and `test_vra.yml` playbook are in the Ansible directory
