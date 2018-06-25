@@ -47,7 +47,7 @@ like so:
 
 ```bash
 # run the python test case using the test JSON data:
-python ./lib/ansible/modules/cloud/vmware/vra_guest.py test_args/vra_guest.json
+python ./lib/ansible/modules/identity/thycotic/thycotic_secret.py test_args/thycotic_secrets.json
 ```
 
 ## Installation
