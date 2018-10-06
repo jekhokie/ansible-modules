@@ -18,9 +18,13 @@ description:
     - "Create and manage secrets in the Thycotic Secret Server software"
 
 options:
-    folder:
+    folder_id:
         description:
-            - Directory under which the secret is/should live
+            - ID of the folder to store the secret in
+        required: true
+    secret_type_id:
+        description:
+            - ID of the type of secret being created
         required: true
     secret_name:
         description:
@@ -30,13 +34,17 @@ options:
         description:
             - Password or secret content to be stored
         required: true
-    thycotic_base_url:
+    secret_field_ids:
         description:
-            - Base URL of the Thycotic instance
+            - Sequence of field IDs required to create the secret (requiring all IDs, in specific order)
         required: true
-    thycotic_wsdl_path:
+    secret_item_values:
         description:
-            - WSDL path to be appended to the 'thycotic_base_url'
+            - Data for various fields corresponding to the secret_field_ids - can include blank strings
+        required: true
+    thycotic_wsdl_url:
+        description:
+            - Full path/URL to the Thycotic WSDL
         required: true
     thycotic_auth_username:
         description:
@@ -52,8 +60,7 @@ options:
         required: true
 
 requirements:
-    - PyYaml
-    - pysimplesoap
+    - suds
 
 author:
     - Justin Karimi (@jekhokie) <jekhokie@gmail.com>
@@ -63,11 +70,24 @@ EXAMPLES = '''
 - name: Create a secret with a password
   delegate_to: localhost
   thycotic_secret:
-    folder: "test_folder/sub_folder_1"
+    folder_id: "123"
+    secret_type_id: "456"
     secret_name: "my test secret"
     secret_content: "supersecretpassword"
-    thycotic_base_url: "https://thycotic.base.url"
-    thycotic_wsdl_path: "WebServices/SSWebService.asmx?wsdl"
+    secret_field_ids:
+    - 108
+    - 111
+    - 110
+    - 109
+    - 251
+    - 252
+    secret_item_values:
+    - "a"
+    - "b"
+    - "c"
+    - ""
+    - ""
+    thycotic_wsdl_url: "https://thycotic.base.url/WebServices/SSWebService.asmx?wsdl"
     thycotic_auth_username: "MyUsername"
     thycotic_auth_password: "auth_password"
     thycotic_auth_domain: "local"
@@ -81,74 +101,28 @@ secret:
     sample: none
 '''
 
-import yaml
-from zeep import Client
+import suds
 from ansible.module_utils.basic import AnsibleModule
-
-class ThycoticHelper(object):
-    '''Helper class for managing interaction with Thycotic and corresponding resources.'''
-
-    def __init__(self, module):
-        """
-        Default constructor
-        Args:
-            module: object containing parameters passed by playbook
-
-        Returns: (ThycoticHelper) Instance of the ThycoticHelper class
-        """
-        self.module = module
-        self.folder = module.params['folder']
-        self.secret_name = module.params['secret_name']
-        self.secret_content = module.params['secret_content']
-        self.thycotic_wsdl_url = "%s/%s" % (module.params['thycotic_base_url'], module.params['thycotic_wsdl_path'])
-        self.auth_username = module.params['thycotic_auth_username']
-        self.auth_password = module.params['thycotic_auth_password']
-        self.auth_domain = module.params['thycotic_auth_domain']
-        self.auth_token = ""
-
-        # initialize token for auth
-        self.get_auth()
-
-    def get_auth(self):
-        """
-        Get an auth token and store for all subsequent requests
-
-        Returns: None (updates the instance with the token)
-        """
-        try:
-            # attempt to get a client connection, timing out if unreachable for 15 seconds
-            client = Client(self.thycotic_wsdl_url)
-
-            # perform a request for an auth token, and raise an exception if none can be obtained
-            response = client.service.Authenticate(username=self.auth_username, password=self.auth_password, domain=self.auth_domain)
-            auth_token = response['Token']
-
-            if auth_token is None:
-                raise Exception("An authentication exception has occurred: %s" % response['Errors'])
-
-            # store auth token for subsequent requests
-            self.auth_token = auth_token
-        except Exception as e:
-            self.module.fail_json(msg="Failed to get auth token: %s" % (e))
 
 def run_module():
     # available options for the module
     module_args = dict(
-        folder=dict(type='str', required=True),
-        secret_name=dict(type='str', required=True),
-        secret_content=dict(type='str', required=True),
-        thycotic_base_url=dict(type='str', required=True),
-        thycotic_wsdl_path=dict(type='str', required=True),
-        thycotic_auth_username=dict(type='str', required=True),
-        thycotic_auth_password=dict(type='str', required=True, no_log=True),
-        thycotic_auth_domain=dict(type='str', required=True)
+        folder_id=dict(type="int", required=True),
+        secret_type_id=dict(type="int", required=True),
+        secret_name=dict(type="str", required=True),
+        secret_content=dict(type="str", required=True),
+        secret_field_ids=dict(type="list", required=True),
+        secret_item_values=dict(type="list", required=True),
+        thycotic_wsdl_url=dict(type="str", required=True),
+        thycotic_auth_username=dict(type="str", required=True),
+        thycotic_auth_password=dict(type="str", required=True, no_log=True),
+        thycotic_auth_domain=dict(type="str", required=True)
     )
 
     # seed result dict that is returned
     result = dict(
         changed=False,
-        failed=False,
-        destroy_id=''
+        failed=False
     )
 
     # default Ansible constructor
@@ -157,14 +131,54 @@ def run_module():
         supports_check_mode=True
     )
 
-    # initialize the interface and get an auth token
-    thycotic_helper = ThycoticHelper(module)
+    # create the SOAP client for interaction
+    client = suds.client.Client(module.params["thycotic_wsdl_url"])
 
-    # check mode - see whether the secret need to be created
+    # get an auth token
+    token = client.service.Authenticate(module.params["thycotic_auth_username"],
+                                        module.params["thycotic_auth_password"],
+                                        "",
+                                        module.params["thycotic_auth_domain"])
 
-    # only create the secret if it doesn't already exist
 
-    # assign results for output
+    # TODO: Make sure the secret does not yet exist - if so, just update the password/fields to the
+    #       values requested if there is a change (and update the module response for changes).
+
+
+    # this implementation is terribly inflexible and confusing needing to specify IDs for various
+    # components - you will need to navigate through the GUI to get the ID numbers for these sections:
+    #  - Secret Type ID: "Create New Secret", then view the "SecretTypeID" parameter in the URL - additionally
+    #                    you can use the script 'get_template_by_name.py' in the 'helpers/' directory which
+    #                    is a bit more friendly and lets you specify the name of the Secret Type you're looking for
+    #  - Folder ID: Right-click on the folder, select "Inspect", then capture the "id" attribute of the
+    #               label DOM element (minus the 'f_' part)
+    #  - Secret Field IDs: Need to get this from a scripted query of the Secret Template using the
+    #                      Secret Template ID - IDs need to be in the correct order
+    #  - Secret Item Values: Corresponding values, in order, to the Field IDs in previous bullet
+    #
+    # There is a Python script in the utils/ directory that allows you to specify a Secret Template ID
+    # and will pull the information related to what the field IDs are for the specific template
+    new_secret = client.factory.create("AddSecret")
+    new_secret.token = token.Token
+    new_secret.secretTypeId = module.params["secret_type_id"]
+    new_secret.secretName = module.params["secret_name"]
+    new_secret.folderId = module.params["folder_id"]
+    new_secret.secretFieldIds = client.factory.create("ArrayOfInt")
+    new_secret.secretFieldIds.int = module.params["secret_field_ids"]
+    new_secret.secretItemValues = client.factory.create("ArrayOfString")
+    new_secret.secretItemValues.string = module.params["secret_item_values"]
+
+    # attempt to create the secret, but thrown an error if something goes wrong
+    try:
+        secret = client.service.AddSecret(new_secret)
+        if secret.Errors != "":
+            module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], secret.Errors[0]))
+        else:
+            result['secret_name'] = secret.Secret.Name
+            result['secret_id'] = secret.Secret.Id
+            result['folder_id'] = secret.Secret.FolderId
+    except Exception as e:
+        module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], e))
 
     # successful run
     module.exit_json(**result)

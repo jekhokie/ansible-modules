@@ -13,11 +13,24 @@
         tags:
             - generic
         thycotic_secret:
-            folder: "test_folder/sub_folder_1"
+            folder_id: "123"
+            secret_type_id: "456"
             secret_name: "my test secret"
             secret_content: "supersecretpassword"
-            thycotic_base_url: "https://thycotic.base.url"
-            thycotic_wsdl_path: "WebServices/SSWebService.asmx?wsdl"
+            secret_field_ids:
+            - 108
+            - 111
+            - 110
+            - 109
+            - 251
+            - 252
+            secret_item_values:
+            - "a"
+            - "b"
+            - "c"
+            - ""
+            - ""
+            thycotic_wsdl_url: "https://thycotic.base.url/WebServices/SSWebService.asmx?wsdl"
             thycotic_auth_username: "MyUsername"
             thycotic_auth_password: "auth_password"
             thycotic_auth_domain: "local"
