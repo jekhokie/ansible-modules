@@ -19,16 +19,12 @@
 #
 # Example:
 #    python helpers/get_template_by_name.py --name 'Password'
-#
-#    args:
-#      username: 'Test User'
-#      password: 'supersecretpassword'
 
 import argparse
 import os
 import json
 import yaml
-from zeep import Client
+import suds
 
 # parse the user arguments
 parser = argparse.ArgumentParser(description='Get and format the required parameters for a Secret Template')
@@ -41,50 +37,52 @@ config_file = os.path.join(os.path.dirname(__file__), '../test_args/thycotic_sec
 with open(config_file) as f:
     CONFIG = json.load(f)['ANSIBLE_MODULE_ARGS']
 
-# this is not DRY - same code exists in the module, but no great way to
-# consolidate given this is simply a helper script
-client = Client("%s/%s" % (CONFIG['thycotic_base_url'], CONFIG['thycotic_wsdl_path']))
+# obtain the auth token
+client = suds.client.Client(CONFIG["thycotic_wsdl_url"])
+auth_token = client.service.Authenticate(CONFIG["thycotic_auth_username"],
+                                         CONFIG["thycotic_auth_password"],
+                                         "",
+                                         CONFIG["thycotic_auth_domain"])
 
-# perform a request for an auth token, and raise an exception if none can be obtained
-response = client.service.Authenticate(username=CONFIG['thycotic_auth_username'],
-                                       password=CONFIG['thycotic_auth_password'],
-                                       domain=CONFIG['thycotic_auth_domain'])
-auth_token = response['Token']
+if auth_token.Token == "" is None:
+    raise Exception("An authentication exception has occurred: {}".format(auth_token.Errors))
 
-if auth_token is None:
-    raise Exception("An authentication exception has occurred: %s" % response['Errors'])
+# GetSecretTemplates: get all templates, parse the desired based on provided name
+templates = client.factory.create("GetSecretTemplates")
+templates.token = auth_token.Token
+secret_templates = client.service.GetSecretTemplates(templates)
 
-# GetSecretTemplates: Get all templates, parse the desired based on provided name
-response = client.service.GetSecretTemplates(token=auth_token)
+if len(secret_templates.SecretTemplates[0]) == 0:
+    raise(Exception("No Secret Templates found - errors: {}".format(secret_templates.Errors)))
 
+# search for the template specified by the user
 found_template = None
-for template in response['SecretTemplates']['SecretTemplate']:
-    if template['Name'] == args.name:
+for template in secret_templates.SecretTemplates[0]:
+    if template.Name == args.name:
         found_template = template
         break
 
 if found_template == None:
-    raise Exception("Could not find template with name %s" % args.name)
+    raise Exception("Could not find template with name {}".format(args.name))
+print(found_template)
 
 # parse the secret for the required fields needed
-template_name = "<REPLACEME_%s>" % found_template['Name']
 secret_type_id = found_template['Id']
 field_ids = []
 fields = []
-for field in found_template['Fields']['SecretField']:
-    field_ids.append(field['Id'])
-    fields.append("<REPLACEME_%s>" % field['DisplayName'])
+for field in found_template.Fields.SecretField:
+    field_ids.append(field.Id)
+    fields.append("<REPLACEME_{}>".format(field.DisplayName))
 
 template_yml = {
     "secretTypeId": found_template['Id'],
-    "secretName": "<REPLACEME_secretName>",
     "secretFieldIds": field_ids,
-    "secretItemValues": fields,
-    "folderName": "solutions/custom_folder"
+    "secretItemValues": fields
 }
 
 # output the results
 print("-----------------------------------------------------")
 print(yaml.dump(template_yml, default_flow_style=False))
 print("-----------------------------------------------------")
-print("WARNING: YOU MUST WRAP STRING VALUES IN THE ABOVE WITH QUOTES AND INDENT APPROPRIATELY")
+print("Take the above and place them into your Ansible configuration - note you MUST include ALL")
+print("fields (include blank strings if you don't wish to specify the values) in the particular order.")
