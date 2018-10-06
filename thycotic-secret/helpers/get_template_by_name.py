@@ -64,7 +64,6 @@ for template in secret_templates.SecretTemplates[0]:
 
 if found_template == None:
     raise Exception("Could not find template with name {}".format(args.name))
-print(found_template)
 
 # parse the secret for the required fields needed
 secret_type_id = found_template['Id']
