@@ -33,10 +33,10 @@ alongside an existing Ansible installation:
 ```bash
 # copy sample playbooks and edit them
 cp sample_playbooks/test_thycotic.yml.sample <PATH_TO_ANSIBLE>/test_thycotic.yml
-vim <PATH_TO_ANSIBLE>test_thycotic.yml
+vim <PATH_TO_ANSIBLE>/test_thycotic.yml
 
 # run Ansible with the hosts file and corresponding playbook:
-ansible-playbook -i <PATH_TO_ANSIBLE>/hosts --tags windows --check <PATH_TO_ANSIBLE>/test_thycotic.yml
+ansible-playbook -i "localhost," --tags generic --check <PATH_TO_ANSIBLE>/test_thycotic.yml
 ```
 
 The above will run the Ansible playbook and pick up the module from this repository, allowing
