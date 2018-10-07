@@ -58,3 +58,10 @@ In order to install this module into an Ansible installation permanently, place 
 
 An example of how to use the `thycotic_secret` module is included in the `sample_playbooks`
 directory. All other documentation is included in the module itself.
+
+## Other Notes
+
+Some other useful information:
+
+* Link to the WSDL for the Secret Server you are using: [link](https://<THYCOTIC_HOSTNAME>/WebServices/SSWebService.asmx?wsdl)
+* Can use utilities such as Postman for executing SOAP requests.
