@@ -140,45 +140,95 @@ def run_module():
                                         "",
                                         module.params["thycotic_auth_domain"])
 
+    # first, inspect whether the secret exists - and if so, check whether the fields just need to be updated
+    secrets = client.factory.create("SearchSecretsByFolder")
+    secrets.token = token.Token
+    secrets.searchTerm = module.params["secret_name"]
+    secrets.folderId = module.params["folder_id"]
+    secrets.includeSubFolders = False
+    secrets.includeDeleted = False
+    secrets.includeRestricted = False
+    secret_results = client.service.SearchSecretsByFolder(secrets)
 
-    # TODO: Make sure the secret does not yet exist - if so, just update the password/fields to the
-    #       values requested if there is a change (and update the module response for changes).
+    if len(secret_results.SecretSummaries) > 0:
+        # found the secret already exists - figure out if it needs to be updated or not
+        # TODO: This will grab the first result, but if there are duplicates, this
+        #       logic is likely to have issues since you won't know which instance you're grabbing
+        secret = secret_results.SecretSummaries[0][0]
+        secret_template = client.factory.create("GetSecret")
+        secret_template.token = token.Token
+        secret_template.secretId = secret.SecretId
+        secret_template.loadSettingsAndPermissions = False
+        secret_data = client.service.GetSecret(secret_template)
 
+        if len(secret_data.Errors) > 0:
+            module.fail_json(msg="Failed to get details of existing Secret with ID {} - errors: {}".format(secret.SecretId, secret_data.Errors[0]))
 
-    # this implementation is terribly inflexible and confusing needing to specify IDs for various
-    # components - you will need to navigate through the GUI to get the ID numbers for these sections:
-    #  - Secret Type ID: "Create New Secret", then view the "SecretTypeID" parameter in the URL - additionally
-    #                    you can use the script 'get_template_by_name.py' in the 'helpers/' directory which
-    #                    is a bit more friendly and lets you specify the name of the Secret Type you're looking for
-    #  - Folder ID: Right-click on the folder, select "Inspect", then capture the "id" attribute of the
-    #               label DOM element (minus the 'f_' part)
-    #  - Secret Field IDs: Need to get this from a scripted query of the Secret Template using the
-    #                      Secret Template ID - IDs need to be in the correct order
-    #  - Secret Item Values: Corresponding values, in order, to the Field IDs in previous bullet
-    #
-    # There is a Python script in the utils/ directory that allows you to specify a Secret Template ID
-    # and will pull the information related to what the field IDs are for the specific template
-    new_secret = client.factory.create("AddSecret")
-    new_secret.token = token.Token
-    new_secret.secretTypeId = module.params["secret_type_id"]
-    new_secret.secretName = module.params["secret_name"]
-    new_secret.folderId = module.params["folder_id"]
-    new_secret.secretFieldIds = client.factory.create("ArrayOfInt")
-    new_secret.secretFieldIds.int = module.params["secret_field_ids"]
-    new_secret.secretItemValues = client.factory.create("ArrayOfString")
-    new_secret.secretItemValues.string = module.params["secret_item_values"]
+        # parse each data field for each mapping and ensure values are aligned - if not, update
+        need_to_update = False
+        for i, prop in enumerate(secret_data.Secret.Items.SecretItem):
+            # first, ensure the property ID matches what we expect (ensure template has not been changed)
+            if prop.FieldId != module.params["secret_field_ids"][i]:
+                module.fail_json(msg="Failed to assess Secret - field ID {} in position {} does not line up with expected value {}".format(prop.FieldId, i, module.params["secret_field_ids"][i]))
 
-    # attempt to create the secret, but thrown an error if something goes wrong
-    try:
-        secret = client.service.AddSecret(new_secret)
-        if secret.Errors != "":
-            module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], secret.Errors[0]))
-        else:
-            result['secret_name'] = secret.Secret.Name
-            result['secret_id'] = secret.Secret.Id
-            result['folder_id'] = secret.Secret.FolderId
-    except Exception as e:
-        module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], e))
+            # convert value to blank string in case None type to enable comparison with provided string values
+            prop.Value = "" if (prop.Value == None) else prop.Value
+
+            # next, ensure the value is correct - if not, kick out and perform a full update of all fields to be on the safe side
+            if prop.Value != module.params["secret_item_values"][i]:
+                need_to_update = True
+                break
+
+        # if we need to update the secret, perform a full update of all fields to be on the safe side
+        if need_to_update == True:
+            result['changed'] = True
+            update_secret = client.factory.create("UpdateSecret")
+            update_secret.token = token.Token
+            update_secret.secret = secret_data.Secret
+            for i, item in enumerate(module.params["secret_item_values"]):
+                update_secret.secret.Items.SecretItem[i].Value = item
+            update_result = client.service.UpdateSecret(update_secret)
+
+            if (len(update_result.Errors) > 0):
+                module.fail_json(msg="Failed to update Secret with ID {} - errors: {}".format(secret.SecretId, update_result.Errors))
+    else:
+        # did not find an existing secret - create new from scratch
+        # this implementation is terribly inflexible and confusing needing to specify IDs for various
+        # components - you will need to navigate through the GUI to get the ID numbers for these sections:
+        #  - Secret Type ID: "Create New Secret", then view the "SecretTypeID" parameter in the URL - additionally
+        #                    you can use the script 'get_template_by_name.py' in the 'helpers/' directory which
+        #                    is a bit more friendly and lets you specify the name of the Secret Type you're looking for
+        #  - Folder ID: Right-click on the folder, select "Inspect", then capture the "id" attribute of the
+        #               label DOM element (minus the 'f_' part)
+        #  - Secret Field IDs: Need to get this from a scripted query of the Secret Template using the
+        #                      Secret Template ID - IDs need to be in the correct order
+        #  - Secret Item Values: Corresponding values, in order, to the Field IDs in previous bullet
+        #
+        # There is a Python script in the utils/ directory that allows you to specify a Secret Template ID
+        # and will pull the information related to what the field IDs are for the specific template
+        result['changed'] = True
+
+        new_secret = client.factory.create("AddSecret")
+        new_secret.token = token.Token
+        new_secret.secretTypeId = module.params["secret_type_id"]
+        new_secret.secretName = module.params["secret_name"]
+        new_secret.folderId = module.params["folder_id"]
+        new_secret.secretFieldIds = client.factory.create("ArrayOfInt")
+        new_secret.secretFieldIds.int = module.params["secret_field_ids"]
+        new_secret.secretItemValues = client.factory.create("ArrayOfString")
+        new_secret.secretItemValues.string = module.params["secret_item_values"]
+
+        # attempt to create the secret, but thrown an error if something goes wrong
+        try:
+            secret = client.service.AddSecret(new_secret)
+            if secret.Errors != "":
+                module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], secret.Errors[0]))
+            else:
+                result['secret_name'] = secret.Secret.Name
+                result['secret_id'] = secret.Secret.Id
+                result['folder_id'] = secret.Secret.FolderId
+        except Exception as e:
+            module.fail_json(msg="Failed to create secret '{}' in Thycotic: {}".format(module.params["secret_name"], e))
 
     # successful run
     module.exit_json(**result)
