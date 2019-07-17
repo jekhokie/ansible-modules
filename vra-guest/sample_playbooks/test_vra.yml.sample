@@ -34,6 +34,14 @@
             vra_username: "automation-user"
             wait_timeout: 600
         register: x
+      - name: Wait for RDP to come up
+        wait_for:
+            host: "{{ item.public_dns_name }}"
+            port: 3389 
+            delay: 60
+            timeout: 320
+            state: powered_on
+        with_items: "{{ x.instances }}"
 
       - name: run vra linux guest creation
         tags:
@@ -56,6 +64,14 @@
             vra_username: "automation-user"
             wait_timeout: 600
         register: x
+      - name: Wait for SSH to come up
+        wait_for:
+            host: "{{ item.public_dns_name }}"
+            port: 22
+            delay: 60
+            timeout: 320
+            state: powered_on
+        with_items: "{{ x.instances }}"
 
       - name: output result
         tags:
@@ -94,6 +110,14 @@
             vra_username: "automation-user"
             wait_timeout: 600
         register: x
+      - name: Wait for SSH to come up
+        wait_for:
+            host: "{{ item.public_dns_name }}"
+            port: 22
+            delay: 60
+            timeout: 320
+            state: powered_on
+        with_items: "{{ x.instances }}"
 
       - name: output result
         tags:
